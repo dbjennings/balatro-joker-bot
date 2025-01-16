@@ -1,0 +1,10 @@
+### Local environment files
+/venv
+.env
+
+### Local data files
+/data
+/*/__pycache__
+
+### Personal notes
+*.txt
