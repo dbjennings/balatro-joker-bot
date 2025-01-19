@@ -6,5 +6,8 @@
 /data
 /*/__pycache__
 
+### Log files
+*.log
+
 ### Personal notes
 *.txt
