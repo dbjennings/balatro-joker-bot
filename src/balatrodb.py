@@ -74,7 +74,7 @@ class BalatroDB:
 
     def __init__(
         self,
-        dbname: str = os.getenv("JOKER_DB_NAME", "balatro"),
+        dbname: str = os.getenv("JOKER_DB_NAME"),
         username: str = os.getenv("JOKER_DB_USER_NAME"),
         password: str = os.getenv("JOKER_DB_PASSWORD"),
         port: str = os.getenv("JOKER_DB_PORT", "5432"),
@@ -145,8 +145,7 @@ class BalatroDB:
         """
         query = """
             SELECT name 
-            FROM jokers.data 
-            WHERE active = true;
+            FROM jokers.data;
         """
 
         try:
@@ -199,7 +198,7 @@ class BalatroDB:
         query = """
             SELECT effect, rarity, cost, availability
             FROM jokers.data
-            WHERE name = %s AND active = true;
+            WHERE name = %s;
         """
 
         try:

@@ -114,13 +114,6 @@ class BalatroBot:
         to prevent false positives in general discussion about jokers. The exclusion
         is handled at the pattern compilation level rather than the database level.
 
-        For example, this will match:
-            - "Credit Card Joker" (specific joker name)
-            - "Steel Joker" (specific joker name)
-        But will not match:
-            - "joker" (generic reference)
-            - "Joker" (generic reference)
-
         Returns:
             str: Compiled regex pattern for matching specific joker names
 
@@ -180,8 +173,10 @@ class BalatroBot:
         """
         try:
             joker = self._db.fetch_joker_information(joker_name)
-            jstr = f"[[{joker['name']}]]: {joker['cost']}, {joker['rarity']}"
-            jstr += f"\n{joker['effect']}\n{joker['availability']}\n"
+            jstr = f"""
+            [[{joker['name']}]]: {joker['cost']}, {joker['rarity']}
+Effect: {joker['effect']}
+Available: {joker['availability']}"""
             return jstr
         except Exception as e:
             logger.error(f"Failed to format joker info for {joker_name}: {str(e)}")
