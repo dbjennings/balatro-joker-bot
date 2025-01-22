@@ -12,15 +12,17 @@ The module uses an LRU cache to store frequently accessed data and implements
 proper cache invalidation strategies when data is modified.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 import os
 import logging
 import cachetools
 from .base import BaseDatabase, QueryError, DatabaseConfig
+from src.domain.models import JokerCard
+from src.domain.interfaces import JokerRepository
 from dotenv import load_dotenv
 
 
-class BalatroDatabase(BaseDatabase):
+class BalatroRepository(BaseDatabase, JokerRepository):
     """
     Specialized database class for managing Balatro joker card data.
 
@@ -30,7 +32,7 @@ class BalatroDatabase(BaseDatabase):
     - Specialized CRUD operations for joker cards
     """
 
-    def __init__(self, config: DatabaseConfig, cache_ttl: int = 3600, *args, **kwargs):
+    def __init__(self, config: DatabaseConfig, *args, **kwargs):
         """
         Initialize Balatro database with caching support.
 
@@ -38,13 +40,13 @@ class BalatroDatabase(BaseDatabase):
             config: DatabaseConfig instance
             cache_ttl: Cache time-to-live in seconds (default: 1 hour)
         """
-        super().__init__(config)
+        super().__init__(config, *args, **kwargs)
         self.logger = logging.getLogger(__name__)
         # Initialize LRU cache with size limit of 1024 entries
         self.cache = cachetools.LRUCache(maxsize=1024)
-        self._initialize_schema()
+        self._ensure_schema()
 
-    def _initialize_schema(self) -> None:
+    def _ensure_schema(self) -> None:
         """
         Initialize database schema for joker cards if not exists.
 
@@ -76,7 +78,7 @@ class BalatroDatabase(BaseDatabase):
             self.logger.error(f"Failed to initialize joker schema: {str(e)}")
             raise
 
-    def fetch_joker_information(self, name: str) -> Optional[Dict]:
+    def get_joker_information(self, name: str) -> Optional[JokerCard]:
         """
         Retrieve information for a specific joker card.
 
@@ -106,9 +108,9 @@ class BalatroDatabase(BaseDatabase):
         try:
             result = self.execute_query(query, (name,))
             if result:
-                joker_info = dict(result[0])
-                self.cache[cache_key] = joker_info
-                return joker_info
+                joker = JokerCard.from_dict(result[0])
+                self.cache[cache_key] = joker
+                return joker
             return None
         except QueryError as e:
             # Reset cache if query fails to prevent stale data
@@ -116,7 +118,7 @@ class BalatroDatabase(BaseDatabase):
             self.logger.error(f"Failed to fetch joker information: {str(e)}")
             raise
 
-    def joker_list(self) -> List[str]:
+    def get_joker_name_list(self) -> List[str]:
         """
         Retrieve list of all joker card names.
 
@@ -144,7 +146,7 @@ class BalatroDatabase(BaseDatabase):
             self.logger.error(f"Failed to fetch joker list: {str(e)}")
             raise
 
-    def add_joker(self, joker_data: Dict) -> None:
+    def add_joker(self, joker: JokerCard) -> None:
         """
         Add or update a joker card in the database.
 
@@ -169,11 +171,11 @@ class BalatroDatabase(BaseDatabase):
         """
 
         try:
-            self.execute_modification(query, joker_data)
+            self.execute_modification(query, joker.as_dict())
             # Invalidate affected cache entries
-            self.cache.pop(f"joker:{joker_data['name'].lower()}", None)
+            self.cache.pop(f"joker:{joker.name.lower()}", None)
             self.cache.pop("joker_list", None)
-            self.logger.info(f"Successfully added/updated joker: {joker_data['name']}")
+            self.logger.info(f"Successfully added/updated joker: {joker.name}")
         except QueryError as e:
             self.logger.error(f"Failed to add joker: {str(e)}")
             raise
@@ -222,9 +224,9 @@ def main():
         database=os.environ["JOKER_DB_NAME"],
     )
 
-    db = BalatroDatabase(config)
+    db = BalatroRepository(config)
 
-    print(db.joker_list())
+    print(db.get_joker_name_list())
 
     new_joker = {
         "name": "Test Joker",
@@ -233,10 +235,6 @@ def main():
         "cost": "3",
         "availability": "Limited",
     }
-
-    db.add_joker(new_joker)
-
-    print(db.joker_list())
 
 
 if __name__ == "__main__":

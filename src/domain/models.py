@@ -47,6 +47,24 @@ class JokerCard:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
+    def as_dict(self) -> dict:
+        """
+        Convert Joker card data to a dictionary.
+
+        Returns:
+            dict: Dictionary containing Joker card data
+
+        This method provides a convenient way to serialize Joker card instances
+        to a dictionary for use in JSON serialization, database storage, etc.
+        """
+        return {
+            "name": self.name,
+            "effect": self.effect,
+            "rarity": self.rarity,
+            "cost": self.cost,
+            "availability": self.availability,
+        }
+
     def validate(self) -> bool:
         """
         Validate all attributes of the Joker card.
@@ -144,7 +162,10 @@ class JokerCard:
         """
         # Define required fields for a valid Joker card
         required_fields = ["name", "effect", "rarity", "cost", "availability"]
-        missing_fields = required_fields - set(data.keys())
+        supplied_fields = set(data.keys())
+        missing_fields = [
+            field for field in required_fields if field not in supplied_fields
+        ]
 
         # Check for missing required fields before processing
         if missing_fields:

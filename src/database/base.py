@@ -13,6 +13,7 @@ The module uses connection pooling to efficiently manage database connections an
 implements context managers for safe resource handling.
 """
 
+import os
 from typing import Any, Optional
 import logging
 from contextlib import contextmanager
@@ -20,6 +21,7 @@ import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import DictCursor
 from dataclasses import dataclass
+from dotenv import load_dotenv
 
 
 class DatabaseError(Exception):
@@ -62,6 +64,35 @@ class DatabaseConfig:
     database: str
     min_connections: int = 1
     max_connections: int = 10
+
+    @classmethod
+    def from_env(cls):
+        load_dotenv()
+
+        required_vars = [
+            "JOKER_DB_NAME",
+            "JOKER_DB_USER_NAME",
+            "JOKER_DB_PASSWORD",
+            "JOKER_DB_HOST",
+            "JOKER_DB_PORT",
+        ]
+
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+        if missing_vars:
+            raise ValueError(
+                f"Missing required environment variables: {", ".join(missing_vars)}"
+            )
+
+        return cls(
+            host=os.getenv("JOKER_DB_HOST"),
+            port=int(os.getenv("JOKER_DB_PORT")),
+            user=os.getenv("JOKER_DB_USER_NAME"),
+            password=os.getenv("JOKER_DB_PASSWORD"),
+            database=os.getenv("JOKER_DB_NAME"),
+            min_connections=int(os.getenv("JOKER_DB_MIN_CONNECTIONS", 1)),
+            max_connections=int(os.getenv("JOKER_DB_MAX_CONNECTIONS", 10)),
+        )
 
 
 class BaseDatabase:

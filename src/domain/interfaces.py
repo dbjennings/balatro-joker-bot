@@ -27,7 +27,7 @@ class JokerRepository(Protocol):
     - Saving new or updated joker cards
     """
 
-    def get_joker(self, name: str) -> Optional[JokerCard]:
+    def get_joker_information(self, name: str) -> Optional[JokerCard]:
         """
         Retrieve a specific joker card by name.
 
@@ -46,7 +46,7 @@ class JokerRepository(Protocol):
         """
         ...
 
-    def get_all_joker_names(self) -> List[str]:
+    def get_joker_names_list(self) -> List[str]:
         """
         Retrieve a list of all available joker card names.
 
@@ -62,7 +62,7 @@ class JokerRepository(Protocol):
         """
         ...
 
-    def save_joker(self, joker: JokerCard) -> None:
+    def add_joker(self, joker: JokerCard) -> None:
         """
         Save a new or updated joker card.
 
@@ -76,6 +76,22 @@ class JokerRepository(Protocol):
 
         The implementation should handle data validation and any necessary
         transformations between the domain model and storage format.
+        """
+        ...
+
+    def delete_joker(self, name: str) -> None:
+        """
+        Delete a joker card by name.
+
+        This method should remove the joker card with the specified name
+        from the storage system. If the joker doesn't exist, the method
+        should not raise an error.
+
+        Args:
+            name: The name of the joker card to delete
+
+        The implementation should handle any storage-specific errors and
+        ensure that the operation is idempotent.
         """
         ...
 
