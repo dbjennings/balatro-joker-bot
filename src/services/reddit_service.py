@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 
 import praw
-import praw.exceptions
-import praw.models
 import prawcore.exceptions
 from praw.models import Comment
 
@@ -46,15 +44,42 @@ class RedditConfig:
     Configuration data class for Reddit service.
     """
 
-    client_id: str
-    client_secret: str
-    user_agent: str
     username: str
     password: str
     subreddit: str
+    client_id: str
+    client_secret: str
+    user_agent: str
     retry_limit: int = 3
     retry_delay: int = 5
     batch_limit: int = 100
+
+    @classmethod
+    def from_env(cls):
+        load_dotenv()
+
+        required_vars = [
+            "REDDIT_USER_NAME",
+            "REDDIT_USER_PASSWORD",
+            "REDDIT_SUBREDDIT",
+            "REDDIT_CLIENT_ID",
+            "REDDIT_CLIENT_SECRET",
+            "REDDIT_USER_AGENT",
+        ]
+
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+
+        if missing_vars:
+            raise ValueError(f"Missing environment variables: {missing_vars}")
+
+        return cls(
+            username=os.getenv(required_vars[0]),
+            password=os.getenv(required_vars[1]),
+            subreddit=os.getenv(required_vars[2]),
+            client_id=os.getenv(required_vars[3]),
+            client_secret=os.getenv(required_vars[4]),
+            user_agent=os.getenv(required_vars[5]),
+        )
 
 
 class RedditService:
@@ -171,6 +196,11 @@ class RedditService:
                 )
                 time.sleep(wait_time)
                 retries += 1
+            except prawcore.exceptions.Forbidden as e:
+                self.logger.debug(
+                    f"Comment reply failed due to forbidden access.  {str(e)}"
+                )
+                continue
 
         raise RedditServiceError(
             f"Operation failed after {self.config.retry_limit} retries"
@@ -208,7 +238,7 @@ class RedditService:
         def reply_operation():
             with self._handle_reddit_errors("comment reply"):
                 reply = comment.reply(response)
-                self.logger.info(f"Successfully eplied to comment {comment.id}")
+                self.logger.info(f"Successfully replied to comment {comment.id}")
                 return reply
 
         self._retry_on_failure(reply_operation)

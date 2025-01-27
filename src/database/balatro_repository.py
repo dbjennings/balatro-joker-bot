@@ -13,13 +13,11 @@ proper cache invalidation strategies when data is modified.
 """
 
 from typing import List, Optional
-import os
 import logging
 import cachetools
 from .base import BaseDatabase, QueryError, DatabaseConfig
-from src.domain.models import JokerCard
-from src.domain.interfaces import JokerRepository
-from dotenv import load_dotenv
+from domain.models import JokerCard
+from domain.interfaces import JokerRepository
 
 
 class BalatroRepository(BaseDatabase, JokerRepository):
@@ -208,34 +206,3 @@ class BalatroRepository(BaseDatabase, JokerRepository):
         except QueryError as e:
             self.logger.error(f"Failed to delete joker: {str(e)}")
             raise
-
-
-def main():
-    """
-    Main entry point for testing database functionality.
-    """
-    load_dotenv()
-
-    config = DatabaseConfig(
-        host="localhost",
-        port=5432,
-        user=os.environ["JOKER_DB_USER_NAME"],
-        password=os.environ["JOKER_DB_PASSWORD"],
-        database=os.environ["JOKER_DB_NAME"],
-    )
-
-    db = BalatroRepository(config)
-
-    print(db.get_joker_name_list())
-
-    new_joker = {
-        "name": "Test Joker",
-        "effect": "Test effect",
-        "rarity": "UR",
-        "cost": "3",
-        "availability": "Limited",
-    }
-
-
-if __name__ == "__main__":
-    main()

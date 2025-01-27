@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
-from src.domain.models import JokerCard
+from domain.models import JokerCard
 from database.base import DatabaseConfig
 from database.balatro_repository import BalatroRepository
 

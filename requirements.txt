@@ -1,2 +1,14 @@
-psycopg2-binary==2.9.10
+cachetools==5.5.1
+certifi==2024.12.14
+charset-normalizer==3.4.1
+idna==3.10
+praw==7.8.1
+prawcore==2.4.0
+psycopg==3.2.4
+psycopg-pool==3.2.4
 python-dotenv==1.0.1
+requests==2.32.3
+typing_extensions==4.12.2
+update-checker==0.18.0
+urllib3==2.3.0
+websocket-client==1.8.0

@@ -1,8 +1,8 @@
 import logging
 from typing import List
 
-from src.domain.models import JokerCard
-from src.domain.interfaces import JokerRepository
+from domain.models import JokerCard
+from domain.interfaces import JokerRepository
 
 
 class JokerServiceError(Exception):
@@ -100,7 +100,7 @@ class JokerService:
         """
         try:
             return (
-                f"[[**{joker.name}**]]: {joker.cost}, Rarity: {joker.rarity}\\"
+                f"[[{joker.name}]]: Cost: {joker.cost}, Rarity: {joker.rarity}\\"
                 f"Effect: {joker.effect}\\"
                 f"Availability: {joker.availability}\\"
             )

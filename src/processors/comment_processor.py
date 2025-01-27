@@ -3,7 +3,7 @@ from typing import List, Pattern, Set
 import re
 import logging
 from praw.models import Comment
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Configure logging to both file and console output
 # This helps with debugging and monitoring the application's behavior
@@ -33,9 +33,13 @@ class CommentProcessorConfig:
     match_pattern: str = (
         r"\\?\[\\?\[(.*?)\\?\]\\?\]"  # Handles both [[text]] and \[\[text\]\]
     )
-    match_phrases: List[str]  # List of valid phrases to match against
-    bot_username: str
-    user_blacklist: List[str] = []  # Default to empty list if not provided
+    match_phrases: List[str] = field(
+        default_factory=list
+    )  # List of valid phrases to match against
+    bot_username: str = field(default_factory=str)
+    user_blacklist: List[str] = field(
+        default_factory=list
+    )  # Default to empty list if not provided
     ignore_case: bool = True
     max_matches: int = 10
     strip_whitespace: bool = True
@@ -70,7 +74,7 @@ class CommentProcessor:
         """
         flags = re.IGNORECASE if self.config.ignore_case else 0
         try:
-            return re.compile(self.config.joker_pattern, flags)
+            return re.compile(self.config.match_pattern, flags)
         except re.error as e:
             self.logger.error(f"Invalid regex pattern: {str(e)}")
             raise ValueError(f"Invalid regex pattern: {str(e)}")

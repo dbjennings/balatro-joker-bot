@@ -1,10 +1,10 @@
 ### Local environment files
-/venv
+venv/
 .env
 
 ### Local data files
-/data
-/*/__pycache__
+data/
+__pycache__/
 
 ### Log files
 *.log

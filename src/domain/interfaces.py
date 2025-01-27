@@ -13,7 +13,7 @@ Two main protocols are defined:
 """
 
 from typing import Protocol, List, Optional, Set
-from src.domain.models import JokerCard
+from .models import JokerCard
 import praw
 
 
@@ -46,7 +46,7 @@ class JokerRepository(Protocol):
         """
         ...
 
-    def get_joker_names_list(self) -> List[str]:
+    def get_joker_name_list(self) -> List[str]:
         """
         Retrieve a list of all available joker card names.
 

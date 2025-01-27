@@ -17,9 +17,8 @@ import os
 from typing import Any, Optional
 import logging
 from contextlib import contextmanager
-import psycopg2
-from psycopg2.pool import SimpleConnectionPool
-from psycopg2.extras import DictCursor
+import psycopg
+from psycopg.rows import dict_row
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
@@ -62,8 +61,6 @@ class DatabaseConfig:
     user: str
     password: str
     database: str
-    min_connections: int = 1
-    max_connections: int = 10
 
     @classmethod
     def from_env(cls):
@@ -80,9 +77,7 @@ class DatabaseConfig:
         missing_vars = [var for var in required_vars if not os.getenv(var)]
 
         if missing_vars:
-            raise ValueError(
-                f"Missing required environment variables: {", ".join(missing_vars)}"
-            )
+            raise ValueError(f"Missing required environment variables: {missing_vars}")
 
         return cls(
             host=os.getenv("JOKER_DB_HOST"),
@@ -90,8 +85,6 @@ class DatabaseConfig:
             user=os.getenv("JOKER_DB_USER_NAME"),
             password=os.getenv("JOKER_DB_PASSWORD"),
             database=os.getenv("JOKER_DB_NAME"),
-            min_connections=int(os.getenv("JOKER_DB_MIN_CONNECTIONS", 1)),
-            max_connections=int(os.getenv("JOKER_DB_MAX_CONNECTIONS", 10)),
         )
 
 
@@ -118,20 +111,11 @@ class BaseDatabase:
         """
         self.logger = logging.getLogger(__name__)
         self.config = config
+        self.connection = None
 
         try:
-            # Initialize connection pool with configured parameters
-            self.pool = SimpleConnectionPool(
-                minconn=self.config.min_connections,
-                maxconn=self.config.max_connections,
-                host=self.config.host,
-                port=self.config.port,
-                user=self.config.user,
-                password=self.config.password,
-                database=self.config.database,
-            )
             self.logger.info("Successfully initiated database connection pool.")
-        except psycopg2.Error as e:
+        except psycopg.Error as e:
             self.logger.error(f"Failed to initiate database connection pool: {str(e)}")
             raise ConnectionError(f"Database connection failed: {str(e)}")
 
@@ -146,17 +130,15 @@ class BaseDatabase:
         Raises:
             ConnectionError: If connection acquisition fails
         """
-        connection = None
         try:
-            connection = self.pool.getconn()
-            yield connection
-        except psycopg2.Error as e:
+            if self.connection == None:
+                self.connection = psycopg.connect(
+                    f"dbname={self.config.database} user={self.config.user} password={self.config.password} port={self.config.port} host={self.config.host}"
+                )
+            yield self.connection
+        except psycopg.Error as e:
             self.logger.error(f"Failed to get database connection: {str(e)}")
             raise ConnectionError(f"Failed to get database connection: {str(e)}")
-        finally:
-            # Ensure connection is always returned to pool
-            if connection:
-                self.pool.putconn(connection)
 
     def execute_query(self, query: str, params: Optional[tuple] = None) -> Any:
         """
@@ -173,11 +155,11 @@ class BaseDatabase:
             QueryError: If query execution fails
         """
         with self.get_connection() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cursor:
+            with conn.cursor(row_factory=dict_row) as cursor:
                 try:
                     cursor.execute(query, params)
                     return cursor.fetchall()
-                except psycopg2.Error as e:
+                except psycopg.Error as e:
                     self.logger.error(f"Failed to execute query: {str(e)}")
                     raise QueryError(f"Failed to execute query: {str(e)}")
 
@@ -201,7 +183,7 @@ class BaseDatabase:
                     cursor.execute(query, params)
                     conn.commit()
                     return cursor.rowcount
-                except psycopg2.Error as e:
+                except psycopg.Error as e:
                     self.logger.error(f"Failed to execute modification: {str(e)}")
                     raise QueryError(f"Failed to execute modification: {str(e)}")
 
@@ -216,6 +198,16 @@ class BaseDatabase:
         Properly closes all connections in the pool when the context is exited,
         preventing connection leaks.
         """
-        if self.pool:
-            self.pool.closeall()
-            self.logger.info("Closed all database connections.")
+        try:
+            if self.connection:
+                self.connection.close()
+                self.logger.info(
+                    f"Database connection to {self.config.database} database closed"
+                )
+                return True
+        except psycopg.Error as e:
+            self.logger.error(f"Database connection failed to close: {str(e)}")
+            return False
+
+        self.logger.info(f"No database connection present.  Task failed successfully.")
+        return True
