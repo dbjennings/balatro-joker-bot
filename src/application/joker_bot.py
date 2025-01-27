@@ -1,8 +1,6 @@
 import logging
 
 from dotenv import load_dotenv
-from praw.models import Comment
-from prawcore.exceptions import Forbidden
 
 from application.config import JokerBotConfig
 from domain.interfaces import JokerRepository
